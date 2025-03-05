@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario desde Google Sheets</title>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        img {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inventario</h1>
+    <div class="grid" id="inventory"></div>
+
+    <script>
+        const sheetId = '1HzwTyJxvUWbCmhHYv6qU8GOoHZFwbP5_LnmjULleAns'; 
+        const apiKey = 'AIzaSyCjHKxUS-1vLKwvbW3glqOXE_X5I2bNLwI'; 
+        const sheetName = 'Hoja%201';
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
+    
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.values) {
+                    console.error("❌ No se encontraron datos en la hoja de cálculo.");
+                    return;
+                }
+    
+                const values = data.values;
+                console.log("✅ Datos obtenidos de Google Sheets:", values);
+    
+                const container = document.getElementById('inventory');
+    
+                // Extraer encabezados y limpiar espacios en blanco
+                const headers = values[0].map(header => header.trim());
+                console.log("📌 Encabezados encontrados:", headers);
+    
+                // Obtener los índices correctamente
+                const productoIndex = headers.indexOf("Producto");
+                const coloresIndex = headers.indexOf("colores");
+                const paquetesIndex = headers.indexOf("Paquetes");
+                const precioIndex = headers.indexOf("Precio");
+                const UrlIndex = headers.indexOf("Url");
+                // Validar si los índices fueron encontrados
+                if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, UrlIndex].includes(-1)) {
+                    console.error("❌ Error: Algunos nombres de columnas no coinciden exactamente con los encabezados en Sheets.");
+                    return;
+                }
+    
+                // Recorrer las filas de datos
+                values.slice(1).forEach(row => {
+                    const nombre = row[productoIndex] ? row[productoIndex].trim() : "Sin nombre";
+                    const colores = row[coloresIndex] ? row[coloresIndex].trim() : "N/A";
+                    const paquetes = row[paquetesIndex] ? row[paquetesIndex].trim() : "N/A";
+                    const precio = row[precioIndex] ? row[precioIndex].trim() : "N/A";
+                    const url = row[UrlIndex] ? row[UrlIndex].trim() : "N/A";   
+                    console.log("📝 Procesando fila:", { nombre, colores, paquetes, precio, url });
+    
+                    const item = document.createElement('div');
+                    item.classList.add('item');
+                    item.innerHTML = `
+                        <h3>${nombre}</h3>
+                        <p><strong>Colores:</strong> ${colores}</p>
+                        <p><strong>Paquetes:</strong> ${paquetes}</p>
+                        <p><strong>Precio:</strong> ${precio}</p>
+                        <img src="${url}" alt="${nombre}">
+                    `;
+                    container.appendChild(item);
+                });
+            })
+            .catch(error => console.error("Error en la solicitud:", error));
+    </script>
+    
+    
+    
+    
+</body>
+</html>
