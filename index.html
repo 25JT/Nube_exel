@@ -3,34 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario desde Google Sheets</title>
-    <style>
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-        .item {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-        }
-        img {
-            width: 100%;
-            height: auto;
-        }
-    </style>
+    <title>Inventario</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Inventario</h1>
-    <div class="grid" id="inventory"></div>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Inventario</h1>
+
+        <!-- Barra de búsqueda -->
+        <div class="mb-4">
+            <input type="text" id="search-input" class="form-control" placeholder="Buscar producto...">
+        </div>
+
+        <div class="row" id="product-container"></div>
+    </div>
 
     <script>
-        const sheetId = '1HzwTyJxvUWbCmhHYv6qU8GOoHZFwbP5_LnmjULleAns'; 
-        const apiKey = 'AIzaSyCjHKxUS-1vLKwvbW3glqOXE_X5I2bNLwI'; 
+        const sheetId = '1HzwTyJxvUWbCmhHYv6qU8GOoHZFwbP5_LnmjULleAns';
+        const apiKey = 'AIzaSyCjHKxUS-1vLKwvbW3glqOXE_X5I2bNLwI';
         const sheetName = 'Hoja%201';
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
-    
+
+        let products = [];
+
+        function fixDriveUrl(driveUrl) {
+            if (driveUrl.includes("drive.google.com")) {
+                return driveUrl.replace("uc?export=view&id=", "thumbnail?id=");
+            }
+            return driveUrl;
+        }
+
         fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -38,54 +42,83 @@
                     console.error("❌ No se encontraron datos en la hoja de cálculo.");
                     return;
                 }
-    
+
                 const values = data.values;
-                console.log("✅ Datos obtenidos de Google Sheets:", values);
-    
-                const container = document.getElementById('inventory');
-    
-                // Extraer encabezados y limpiar espacios en blanco
                 const headers = values[0].map(header => header.trim());
-                console.log("📌 Encabezados encontrados:", headers);
-    
-                // Obtener los índices correctamente
+
                 const productoIndex = headers.indexOf("Producto");
                 const coloresIndex = headers.indexOf("colores");
                 const paquetesIndex = headers.indexOf("Paquetes");
                 const precioIndex = headers.indexOf("Precio");
-                const UrlIndex = headers.indexOf("Url");
-                // Validar si los índices fueron encontrados
-                if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, UrlIndex].includes(-1)) {
-                    console.error("❌ Error: Algunos nombres de columnas no coinciden exactamente con los encabezados en Sheets.");
+                const urlIndex = headers.indexOf("Url");
+
+                if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex].includes(-1)) {
+                    console.error("❌ Error: Algunos nombres de columnas no coinciden.");
                     return;
                 }
-    
-                // Recorrer las filas de datos
-                values.slice(1).forEach(row => {
-                    const nombre = row[productoIndex] ? row[productoIndex].trim() : "Sin nombre";
-                    const colores = row[coloresIndex] ? row[coloresIndex].trim() : "N/A";
-                    const paquetes = row[paquetesIndex] ? row[paquetesIndex].trim() : "N/A";
-                    const precio = row[precioIndex] ? row[precioIndex].trim() : "N/A";
-                    const url = row[UrlIndex] ? row[UrlIndex].trim() : "N/A";   
-                    console.log("📝 Procesando fila:", { nombre, colores, paquetes, precio, url });
-    
-                    const item = document.createElement('div');
-                    item.classList.add('item');
-                    item.innerHTML = `
-                        <h3>${nombre}</h3>
-                        <p><strong>Colores:</strong> ${colores}</p>
-                        <p><strong>Paquetes:</strong> ${paquetes}</p>
-                        <p><strong>Precio:</strong> ${precio}</p>
-                        <img src="${url}" alt="${nombre}">
-                    `;
-                    container.appendChild(item);
-                });
+
+                products = values.slice(1).map(row => ({
+                    title: row[productoIndex]?.trim() || "Sin nombre",
+                    colores: row[coloresIndex]?.trim() || "N/A",
+                    paquetes: row[paquetesIndex]?.trim() || "N/A",
+                    price: `$${row[precioIndex]?.trim() || "N/A"}`,
+                    imgSrc: fixDriveUrl(row[urlIndex]?.trim() || ""),
+                }));
+
+                products.sort((a, b) => a.title.localeCompare(b.title));
+                displayProducts(products);
             })
             .catch(error => console.error("Error en la solicitud:", error));
+
+        const container = document.getElementById("product-container");
+        const searchInput = document.getElementById("search-input");
+
+        function displayProducts(filteredProducts) {
+            container.innerHTML = "";
+            filteredProducts.forEach(product => {
+                const colDiv = document.createElement("div");
+                colDiv.className = "col-md-4 mb-4";
+
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card h-100 shadow-sm";
+
+                const img = document.createElement("img");
+                img.className = "card-img-top";
+                img.src = product.imgSrc;
+                img.alt = product.title;
+                img.style.objectFit = "cover";
+                img.style.height = "200px";
+
+                const cardBody = document.createElement("div");
+                cardBody.className = "card-body text-center";
+
+                const cardTitle = document.createElement("h5");
+                cardTitle.className = "card-title";
+                cardTitle.innerText = product.title;
+
+                const cardText = document.createElement("p");
+                cardText.className = "card-text fw-bold";
+                cardText.innerText = product.price;
+
+                cardBody.appendChild(cardTitle);
+                cardBody.appendChild(cardText);
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(cardBody);
+                colDiv.appendChild(cardDiv);
+                container.appendChild(colDiv);
+            });
+        }
+
+        searchInput.addEventListener("input", function () {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredProducts = products.filter(product =>
+                product.title.toLowerCase().includes(searchTerm)
+            );
+            displayProducts(filteredProducts);
+        });
     </script>
-    
-    
-    
-    
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
