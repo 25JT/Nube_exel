@@ -29,10 +29,14 @@
         let products = [];
 
         function fixDriveUrl(driveUrl) {
-            if (driveUrl.includes("drive.google.com")) {
-                return driveUrl.replace("uc?export=view&id=", "thumbnail?id=");
+            if (!driveUrl) return "";
+            
+            let match = driveUrl.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)(?:\/view|\?|$)/);
+            if (match && match[1]) {
+                return `https://drive.google.com/thumbnail?export=view&id=${match[1]}`;
             }
-            return driveUrl;
+
+            return driveUrl; // Si no es de Drive, la deja igual.
         }
 
         fetch(url)
