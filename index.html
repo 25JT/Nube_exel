@@ -87,7 +87,7 @@ fetch(url)
         products.sort((a, b) => a.title.localeCompare(b.title));
         displayProducts(products);
     })
-    .catch(error => console.error("🚨 Error en la solicitud:", error));
+    .catch(error => console.error("🚨 Error puede ser con el servidor en la solicitud:", error ));
 
 const container = document.getElementById("product-container");
 const searchInput = document.getElementById("search-input");
