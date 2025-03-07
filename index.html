@@ -21,79 +21,23 @@
     </div>
 
     <script>
-        const url = `https://pruebasapiprotection-production.up.railway.app/inventario`; //node index.js   //http://localhost:3000/inventario
+     //  const url = `http://localhost:3000/inventario`; //node index.js   //http://localhost:3000/inventario
 
-fetch(url)
-    .then(response => response.json())
-    .then(data => {
-        console.log("🔍 Respuesta completa de la API:", data);
-        console.log("📌 Claves en data:", Object.keys(data));
-        console.log("📌 Tipo de data.values:", typeof data.values);
-        console.log("📌 ¿Es un array?", Array.isArray(data.values));
-
-        // Validación mejorada
-        if (!data || typeof data !== "object") {
-            console.error("❌ No se encontraron datos válidos en la hoja de cálculo.");
-            return;
-        }
-
-        const values = Array.isArray(data.values) ? data.values : Object.values(data);
-        console.log("✅ Datos organizados en filas:", values);
-
-        if (!Array.isArray(values) || values.length === 0) {
-            console.error("❌ No hay datos válidos en la respuesta.");
-            return;
-        }
-
-        // Extraer encabezados desde la primera fila
-        const headers = values[0] && typeof values[0] === "object" ? Object.keys(values[0]) : [];
-        console.log("📝 Encabezados detectados:", headers);
-
-        // Buscamos los índices de las columnas
-        const productoIndex = headers.indexOf("title");
-        const coloresIndex = headers.indexOf("colores");
-        const paquetesIndex = headers.indexOf("paquetes");
-        const precioIndex = headers.indexOf("price");
-        const urlIndex = headers.indexOf("imgSrc");
-
-
-        console.log("🔍 Índices de las columnas:", { productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex });
-
-        if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex].includes(-1)) {
-            console.error("❌ Error: Algunos nombres de columnas no coinciden.");
-            return;
-        }
-
-        // Función para corregir URLs de imágenes de Google Drive
-        function fixDriveUrl(driveUrl) {
-            if (!driveUrl) return "";
-            let match = driveUrl.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)(?:\/view|\?|$)/);
-            return match && match[1] ? `https://drive.google.com/thumbnail?export=view&id=${match[1]}` : driveUrl;
-        }
-
-        // Procesar productos
-        let products = values.slice(1).map(row => {
-            console.log("🔹 Fila procesada:", row);
-            return {
-                title: row['title']?.trim() || "Sin nombre",
-                colores: row['colores']?.trim() || "N/A",
-                paquetes: row['paquetes']?.trim() || "N/A",
-                price: `$${row['price']?.trim() || "N/A"}`,
-                imgSrc: fixDriveUrl(row['imgSrc']?.trim() || ""),
-            };
-        });
-
-        console.log("📦 Productos procesados:", products);
-        products.sort((a, b) => a.title.localeCompare(b.title));
-        displayProducts(products);
-    })
-    .catch(error => console.error("🚨 Error puede ser con el servidor en la solicitud:", error ));
-
-const container = document.getElementById("product-container");
+     const container = document.getElementById("product-container");
 const searchInput = document.getElementById("search-input");
 
 function displayProducts(filteredProducts) {
     container.innerHTML = "";
+
+    if (filteredProducts.length === 0) {
+        // Si no hay coincidencias, mostrar un mensaje
+        const noResultDiv = document.createElement("div");
+        noResultDiv.className = "col-12 text-center mt-4";
+        noResultDiv.innerHTML = `<h5 class="text-danger">❌ No se encontraron productos con ese nombre.</h5>`;
+        container.appendChild(noResultDiv);
+        return;
+    }
+
     filteredProducts.forEach(product => {
         const colDiv = document.createElement("div");
         colDiv.className = "col-md-4 mb-4";
@@ -128,6 +72,60 @@ function displayProducts(filteredProducts) {
     });
 }
 
+let products = [];
+
+fetch("http://localhost:3000/inventario")
+    .then(response => response.json())
+    .then(data => {
+        console.log("🔍 Respuesta de la API:", data);
+
+        if (!data || typeof data !== "object") {
+            console.error("❌ No se encontraron datos válidos en la API.");
+            return;
+        }
+
+        const values = Array.isArray(data.values) ? data.values : Object.values(data);
+        console.log("✅ Datos organizados en filas:", values);
+
+        if (!Array.isArray(values) || values.length === 0) {
+            console.error("❌ No hay datos válidos en la respuesta.");
+            return;
+        }
+
+        const headers = values[0] && typeof values[0] === "object" ? Object.keys(values[0]) : [];
+        console.log("📝 Encabezados detectados:", headers);
+
+        const productoIndex = headers.indexOf("title");
+        const coloresIndex = headers.indexOf("colores");
+        const paquetesIndex = headers.indexOf("paquetes");
+        const precioIndex = headers.indexOf("price");
+        const urlIndex = headers.indexOf("imgSrc");
+
+        if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex].includes(-1)) {
+            console.error("❌ Error: Algunos nombres de columnas no coinciden.");
+            return;
+        }
+
+        function fixDriveUrl(driveUrl) {
+            if (!driveUrl) return "";
+            let match = driveUrl.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)(?:\/view|\?|$)/);
+            return match && match[1] ? `https://drive.google.com/thumbnail?export=view&id=${match[1]}` : driveUrl;
+        }
+
+        products = values.slice(1).map(row => ({
+            title: row['title']?.trim() || "Sin nombre",
+            colores: row['colores']?.trim() || "N/A",
+            paquetes: row['paquetes']?.trim() || "N/A",
+            price: `$${row['price']?.trim() || "N/A"}`,
+            imgSrc: fixDriveUrl(row['imgSrc']?.trim() || ""),
+        }));
+
+        console.log("📦 Productos procesados:", products);
+        products.sort((a, b) => a.title.localeCompare(b.title));
+        displayProducts(products);
+    })
+    .catch(error => console.error("🚨 Error con la API:", error));
+
 searchInput.addEventListener("input", function () {
     const searchTerm = searchInput.value.toLowerCase();
     const filteredProducts = products.filter(product =>
@@ -135,6 +133,7 @@ searchInput.addEventListener("input", function () {
     );
     displayProducts(filteredProducts);
 });
+
 
     </script>
     
