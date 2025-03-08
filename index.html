@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
 </head>
+
 <body>
     <div class="container mt-4">
         <h1 class="text-center mb-4">Inventario</h1>
@@ -21,125 +23,141 @@
     </div>
 
     <script>
-     //  const url = `http://localhost:3000/inventario`; //node index.js   //http://localhost:3000/inventario
+        //   `http://localhost:3805/mision`;   //http://localhost:3000
 
-     const container = document.getElementById("product-container");
-const searchInput = document.getElementById("search-input");
+        const container = document.getElementById("product-container");
+        const searchInput = document.getElementById("search-input");
 
-function displayProducts(filteredProducts) {
-    container.innerHTML = "";
+        function displayProducts(filteredProducts) {
+            container.innerHTML = "";
 
-    if (filteredProducts.length === 0) {
-        // Si no hay coincidencias, mostrar un mensaje
-        const noResultDiv = document.createElement("div");
-        noResultDiv.className = "col-12 text-center mt-4";
-        noResultDiv.innerHTML = `<h5 class="text-danger">❌ No se encontraron productos con ese nombre.</h5>`;
-        container.appendChild(noResultDiv);
-        return;
-    }
+            if (filteredProducts.length === 0) {
+                const noResultDiv = document.createElement("div");
+                noResultDiv.className = "col-12 text-center mt-4";
+                noResultDiv.innerHTML = `<h5 class="text-danger">❌ No se encontraron productos con ese nombre.</h5>`;
+                container.appendChild(noResultDiv);
+                return;
+            }
 
-    filteredProducts.forEach(product => {
-        const colDiv = document.createElement("div");
-        colDiv.className = "col-md-4 mb-4";
+            filteredProducts.forEach(product => {
+                const colDiv = document.createElement("div");
+                colDiv.className = "col-md-4 mb-4";
 
-        const cardDiv = document.createElement("div");
-        cardDiv.className = "card h-100 shadow-sm";
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card h-100 shadow-sm";
 
-        const img = document.createElement("img");
-        img.className = "card-img-top";
-        img.src = product.imgSrc;
-        img.alt = product.title;
-        img.style.objectFit = "cover";
-        img.style.height = "200px";
+                const img = document.createElement("img");
+                img.className = "card-img-top";
+                img.src = product.imgSrc;
+                img.alt = product.title;
+                img.style.objectFit = "cover";
+                img.style.height = "200px";
 
-        const cardBody = document.createElement("div");
-        cardBody.className = "card-body text-center";
+                const cardBody = document.createElement("div");
+                cardBody.className = "card-body text-center";
 
-        const cardTitle = document.createElement("h5");
-        cardTitle.className = "card-title";
-        cardTitle.innerText = product.title;
+                const cardTitle = document.createElement("h5");
+                cardTitle.className = "card-title";
+                cardTitle.innerText = product.title;
 
-        const cardText = document.createElement("p");
-        cardText.className = "card-text fw-bold";
-        cardText.innerText = product.price;
+                const cardText = document.createElement("p");
+                cardText.className = "card-text fw-bold";
+                cardText.innerText = product.price;
 
-        cardBody.appendChild(cardTitle);
-        cardBody.appendChild(cardText);
-        cardDiv.appendChild(img);
-        cardDiv.appendChild(cardBody);
-        colDiv.appendChild(cardDiv);
-        container.appendChild(colDiv);
-    });
-}
+                // Botón de WhatsApp
+                const whatsappButton = document.createElement("button");
+                whatsappButton.className = "btn btn-success mt-2";
+                whatsappButton.innerText = "📲 Comprar por WhatsApp";
+                whatsappButton.onclick = () => sendWhatsAppMessage(product.title);
 
-let products = [];
-
-fetch("http://localhost:3000/inventario")
-    .then(response => response.json())
-    .then(data => {
-        console.log("🔍 Respuesta de la API:", data);
-
-        if (!data || typeof data !== "object") {
-            console.error("❌ No se encontraron datos válidos en la API.");
-            return;
+                cardBody.appendChild(cardTitle);
+                cardBody.appendChild(cardText);
+                cardBody.appendChild(whatsappButton); // Agregar botón a la tarjeta
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(cardBody);
+                colDiv.appendChild(cardDiv);
+                container.appendChild(colDiv);
+            });
         }
 
-        const values = Array.isArray(data.values) ? data.values : Object.values(data);
-        console.log("✅ Datos organizados en filas:", values);
-
-        if (!Array.isArray(values) || values.length === 0) {
-            console.error("❌ No hay datos válidos en la respuesta.");
-            return;
+        // Función para abrir WhatsApp con el mensaje prellenado
+        function sendWhatsAppMessage(productName) {
+            const phoneNumber = "xxxxxxxx"; // Reemplaza con el número de WhatsApp del negocio
+            const message = encodeURIComponent(`Hola, estoy interesado en comprar: ${productName}. ¿Está disponible?`);
+            const whatsappURL = `https://wa.me/${phoneNumber}?text=${message}`;
+            window.open(whatsappURL, "_blank");
         }
 
-        const headers = values[0] && typeof values[0] === "object" ? Object.keys(values[0]) : [];
-        console.log("📝 Encabezados detectados:", headers);
+        let products = [];
 
-        const productoIndex = headers.indexOf("title");
-        const coloresIndex = headers.indexOf("colores");
-        const paquetesIndex = headers.indexOf("paquetes");
-        const precioIndex = headers.indexOf("price");
-        const urlIndex = headers.indexOf("imgSrc");
+        fetch("http://localhost:3000/inventario")//node index.js 
 
-        if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex].includes(-1)) {
-            console.error("❌ Error: Algunos nombres de columnas no coinciden.");
-            return;
-        }
+            .then(response => response.json())
+            .then(data => {
+              //  console.log("🔍 Respuesta de la API:", data);
 
-        function fixDriveUrl(driveUrl) {
-            if (!driveUrl) return "";
-            let match = driveUrl.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)(?:\/view|\?|$)/);
-            return match && match[1] ? `https://drive.google.com/thumbnail?export=view&id=${match[1]}` : driveUrl;
-        }
+                if (!data || typeof data !== "object") {
+                    console.error("❌ No se encontraron datos válidos en la API.");
+                    return;
+                }
 
-        products = values.slice(1).map(row => ({
-            title: row['title']?.trim() || "Sin nombre",
-            colores: row['colores']?.trim() || "N/A",
-            paquetes: row['paquetes']?.trim() || "N/A",
-            price: `$${row['price']?.trim() || "N/A"}`,
-            imgSrc: fixDriveUrl(row['imgSrc']?.trim() || ""),
-        }));
+                const values = Array.isArray(data.values) ? data.values : Object.values(data);
+              //  console.log("✅ Datos organizados en filas:", values);
 
-        console.log("📦 Productos procesados:", products);
-        products.sort((a, b) => a.title.localeCompare(b.title));
-        displayProducts(products);
-    })
-    .catch(error => console.error("🚨 Error con la API:", error));
+                if (!Array.isArray(values) || values.length === 0) {
+                    console.error("❌ No hay datos válidos en la respuesta.");
+                    return;
+                }
 
-searchInput.addEventListener("input", function () {
-    const searchTerm = searchInput.value.toLowerCase();
-    const filteredProducts = products.filter(product =>
-        product.title.toLowerCase().includes(searchTerm)
-    );
-    displayProducts(filteredProducts);
-});
+                const headers = values[0] && typeof values[0] === "object" ? Object.keys(values[0]) : [];
+             //   console.log("📝 Encabezados detectados:", headers);
+
+                const productoIndex = headers.indexOf("title");
+                const coloresIndex = headers.indexOf("colores");
+                const paquetesIndex = headers.indexOf("paquetes");
+                const precioIndex = headers.indexOf("price");
+                const urlIndex = headers.indexOf("imgSrc");
+
+                if ([productoIndex, coloresIndex, paquetesIndex, precioIndex, urlIndex].includes(-1)) {
+                    console.error("❌ Error: Algunos nombres de columnas no coinciden.");
+                    return;
+                }
+
+                function fixDriveUrl(driveUrl) {
+                    if (!driveUrl) return "";
+                    let match = driveUrl.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)(?:\/view|\?|$)/);
+                    return match && match[1] ? `https://drive.google.com/thumbnail?export=view&id=${match[1]}` : driveUrl;
+                }
+
+                products = values.slice(1).map(row => ({
+                    title: row['title']?.trim() || "Sin nombre",
+                    colores: row['colores']?.trim() || "N/A",
+                    paquetes: row['paquetes']?.trim() || "N/A",
+                    price: `${row['price']?.trim() || "N/A"}`,
+                    imgSrc: fixDriveUrl(row['imgSrc']?.trim() || ""),
+                }));
+
+              //  console.log("📦 Productos procesados:", products);
+                products.sort((a, b) => a.title.localeCompare(b.title));
+                displayProducts(products);
+            })
+            .catch(error => console.error("🚨 Error con la API:", error));
+
+        searchInput.addEventListener("input", function () {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredProducts = products.filter(product =>
+                product.title.toLowerCase().includes(searchTerm)
+            );
+            displayProducts(filteredProducts);
+        });
 
 
     </script>
-    
-   
+
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
